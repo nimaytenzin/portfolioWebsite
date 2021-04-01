@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html>
+<head>
+	
+	<title>OD Visualization for Schools</title>
+
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	
+	<link rel="shortcut icon" type="image/x-icon" href="docs/images/favicon.ico" />
+  <link rel="stylesheet" href="./style3.css">
+
+    <!-- <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A==" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js" integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA==" crossorigin=""></script> -->
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css">
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/esri-leaflet@3.0.0/dist/esri-leaflet.js"></script>
+
+    <!-- Load animation tweening lib requirement for CanvasFlowMapLayer -->
+    <script src="https://unpkg.com/@tweenjs/tween.js@18.6.4/dist/tween.umd.js"></script>
+    <script src="https://unpkg.com/papaparse@5.3.0/papaparse.min.js"></script>
+    <!-- then load CanvasFlowMapLayer -->
+    <script src="./CanvasFlowmapLayer.js"></script>
+	
+</head>
+<body>
+
+<h4>
+  Visualization of OD for Schools
+</h4>
+<div id="infod">
+
+</div>
+
+<div id="mapid" style="width: 100%; height: 95vh;"></div>
+
+<!-- <script>
+
+	var mymap = L.map('mapid').setView([51.505, -0.09], 13);
+
+
+    var geoJsonFile = {
+        "type": "Feature",
+        "geometry": {
+            "type": "Point",
+            "coordinates":[51.505, -0.09]
+        },
+        "properties": {
+            "origin_id": 238,
+            "origin_city": "Hechi",
+            "origin_country": "China",
+            "origin_lon": -0.09,
+            "origin_lat": 51.505,
+            "destination_id": 1,
+            "destination_city": "Sarh",
+            "destination_country": "Chad",
+            "destination_lon": 18.39002966,
+            "destination_lat": 9.149969909
+        }
+    }
+    var exampleFlowmapLayer = L.canvasFlowmapLayer(geoJsonFile, {
+        pathDisplayMode: 'selection',
+        animationStarted: true,
+        animationEasingFamily: 'Cubic',
+        animationEasingType: 'In',
+        animationDuration: 2000
+    }).addTo(mymap);
+
+	L.tileLayer('https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token=pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw', {
+		maxZoom: 20,
+        zoom:2,
+		attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, ' +
+			'Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
+		id: 'mapbox/streets-v11',
+		tileSize: 512,
+		zoomOffset: -1
+	}).addTo(mymap);
+
+	L.marker([51.5, -0.09]).addTo(mymap)
+		.bindPopup("<b>Hello world!</b><br />I am a popup.").openPopup();
+
+	L.circle([51.508, -0.11], 500, {
+		color: 'red',
+		fillColor: '#f03',
+		fillOpacity: 0.5
+	}).addTo(mymap).bindPopup("I am a circle.");
+
+	L.polygon([
+		[51.509, -0.08],
+		[51.503, -0.06],
+		[51.51, -0.047]
+	]).addTo(mymap).bindPopup("I am a polygon.");
+
+
+	var popup = L.popup();
+
+	function onMapClick(e) {
+		popup
+			.setLatLng(e.latlng)
+			.setContent("You clicked the map at " + e.latlng.toString())
+			.openOn(mymap);
+	}
+
+	mymap.on('click', onMapClick);
+
+</script> -->
+
+<script>
+    var map = L.map('mapid');
+    var selection;
+    var neighbourhoodZones = "https://raw.githubusercontent.com/nimaytenzin/cdrs/main/boud.geojson";   
+
+    if (L.Browser.mobile) {
+      map.setView([27.4733136477, 89.6382533581], 13);
+    } else {
+      map.setView([27.4733136477, 89.6382533581], 13);
+    }
+    var oneToManyFlowmapLayer;
+    var base = L.esri.basemapLayer('DarkGray').addTo(map)
+
+   var sat = L.tileLayer('http://mt0.google.com/vt/lyrs=s&hl=en&x={x}&y={y}&z={z}')
+    var imgaery = L.esri.basemapLayer('Imagery');
+    var basemaps = {
+      "esri":base,
+      "imagery":sat
+    };
+
+    // var zones = L.geojson(neighbourhoodZones).addTo(map)
+
+    // L.esri.featureLayer(neighbourhoodZones).addTo(map)
+    // Papa.parse('https://raw.githubusercontent.com/jwasilgeo/Leaflet.Canvas-Flowmap-Layer/master/docs/csv-data/Flowmap_Cities_many_to_one.csv', {
+    Papa.parse('https://raw.githubusercontent.com/kwangyel/zhicharthimphuFrontend/master/od.csv', {
+    // Papa.parse('/docs/csv-data/Flowmap_Cities_many_to_one.csv', {
+      download: true,
+      header: true,
+      dynamicTyping: true,
+      skipEmptyLines: true,
+      complete: function(results) {
+        var geoJsonFeatureCollection = {
+          type: 'FeatureCollection',
+          features: results.data.map(function(datum) {
+            return {
+              type: 'Feature',
+              geometry: {
+                type: 'Point',
+                coordinates: [datum.zone_long, datum.zone_lat]
+              },
+              properties: datum
+            }
+          })
+        };
+
+        
+
+     oneToManyFlowmapLayer = L.canvasFlowmapLayer(geoJsonFeatureCollection, {
+	  pointToLayer: function(point, latlng) {
+            var marker = L.circleMarker(latlng);
+            return marker.bindPopup('' + point.properties.dest_school);
+          },
+          originAndDestinationFieldIds: {
+            originUniqueIdField: 'origin_id',
+            originGeometry: {
+              x: 'zone_long',
+              y: 'zone_lat'
+            },
+            destinationUniqueIdField: 'dest_id',
+            destinationGeometry: {
+              x: 'school_long',
+              y: 'school_lat'
+            }
+          },
+		          canvasBezierStyle: {
+            type: 'classBreaks',
+            field: 'count',
+            classBreakInfos: [{
+              classMinValue: 0,
+              classMaxValue: 25,
+              symbol: {
+                strokeStyle: '#5CB270',
+                lineWidth: 0.5,
+                lineCap: 'round',
+                
+              }
+            }, {
+              classMinValue: 25,
+              classMaxValue: 50,
+              symbol: {
+                strokeStyle: '#82C26E',
+                lineWidth: 2,
+                lineCap: 'round',
+                
+              }
+            }, {
+              classMinValue: 50,
+              classMaxValue: 100,
+              symbol: {
+                strokeStyle: '#A71E34',
+                lineWidth: 3.5,
+                lineCap: 'round',
+                
+              }
+            },{
+              classMinValue: 100,
+              classMaxValue: 200,
+              symbol: {
+                strokeStyle: '#B21E35',
+                lineWidth: 5,
+                lineCap: 'round',
+                
+              }
+            },{
+              classMinValue: 200,
+              classMaxValue: 400,
+              symbol: {
+                strokeStyle: '#BD1F36',
+                lineWidth: 7,
+                lineCap: 'round',
+                
+              }
+            },{
+              classMinValue: 400,
+              classMaxValue: 500,
+              symbol: {
+                strokeStyle: '#C71F37',
+                lineWidth: 9,
+                lineCap: 'round',
+                
+              }
+            },{
+              classMinValue: 500,
+              classMaxValue: 1000,
+              symbol: {
+                strokeStyle: '#DA1E37',
+                lineWidth: 12,
+                lineCap: 'round',
+                
+              }
+            },
+
+
+          ],
+            // the layer will use the defaultSymbol if a data value doesn't fit
+            // in any of the defined classBreaks
+            defaultSymbol: {
+              strokeStyle: '#e7e1ef',
+              lineWidth: 0.5,
+              lineCap: 'round',
+              
+            },
+          },
+          pathDisplayMode: 'selection',
+          animationStarted: true,
+          animationEasingFamily: 'Cubic',
+          animationEasingType: 'In',
+          animationDuration: 2000
+        }).addTo(map);
+
+        // since this demo is using the optional "pathDisplayMode" as "selection",
+        // it is up to the developer to wire up a click or mouseover listener
+        // and then call the "selectFeaturesForPathDisplay()" method to inform the layer
+        // which Bezier paths need to be drawn
+        oneToManyFlowmapLayer.on('click', function(e) {
+          console.log(e)
+          selection =  e.layer.feature.properties.dest_school;
+          document.getElementById('infod').innerHTML = selection
+
+          if (e.sharedOriginFeatures.length) {
+            oneToManyFlowmapLayer.selectFeaturesForPathDisplay(e.sharedOriginFeatures, 'SELECTION_NEW');
+          }
+          if (e.sharedDestinationFeatures.length) {
+            oneToManyFlowmapLayer.selectFeaturesForPathDisplay(e.sharedDestinationFeatures, 'SELECTION_NEW');
+          }
+        });
+
+        // immediately select an origin point for Bezier path display,
+        // instead of waiting for the first user click event to fire
+      oneToManyFlowmapLayer.selectFeaturesForPathDisplayById('origin_id',9, true, 'SELECTION_NEW');
+        // oneToManyFlowmapLayer.selectFeaturesForPathDisplayById('origin_id', 13, true, 'SELECTION_ADD');
+        // oneToManyFlowmapLayer.selectFeaturesForPathDisplayById('origin_id', 14, true, 'SELECTION_ADD');
+      }
+    });
+    
+    var neighborhood = L.geoJSON(null,{
+          style:{
+            fillColor: 'white',
+          weight: 2,
+          opacity: .2,
+          
+          dashArray: '3',
+          fillOpacity: 0
+          },
+          onEachFeature:  (feature, layer) => {
+           
+            layer.bindTooltip(feature.properties.Name)
+          }
+        }
+      );
+
+     
+    
+   
+
+
+        var overlayMaps = {
+      "Neighbourhoods": neighborhood
+      };
+      
+      
+
+
+
+    fetch(neighbourhoodZones)
+        .then(res => {
+           return res.json();
+        })
+        .then(data => {
+          neighborhood.addData(data);
+        })
+  
+    this.layers = L.control.layers(basemaps,overlayMaps).addTo(map);
+  </script>
+
+
+
+</body>
+</html>
